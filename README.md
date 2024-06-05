@@ -13,8 +13,11 @@ This project is a solution to the challenge of reading and processing 1 billion 
 - Has custom parsing method to be more efficient not only in IO operations, but in processing operations as well.
 - Uses combination of HashMap and TreeMap to be able to handle data processing in threads safely and without locking.
 
-## Entry File
-The main entry point for the application is the [`CalculateAverage_azim.java`](CalculateAverage_azim.java) file.
+## Final Version
+The Final Version of the application is the [`CalculateAverage_azim.java`](CalculateAverage_azim.java) file.
+
+## Version History
+You can check out my progress at the [history](https://github.com/Azim-Azizov/1brc-java/commits/main) of this repository.
 
 ## Results
 - **Runtime**: The processing of 1 billion rows was completed in around `30 seconds`.

@@ -1,40 +1,45 @@
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.Map;
-import java.util.Optional;
+import java.util.concurrent.Callable;
 
-public class ReaderTask implements Runnable {
-    private static final String FILEPATH = "../1BRC/bigdata.csv";
-//    private final Integer threadNumber;
-    private final Integer skip;
-    private final Integer read;
-    private Map<String, TemperatureMetrics> map;
+public class ReaderTask implements Callable<Void> {
+    private final File file;
+    private final long start;
+    private final long end;
+    private final Map<String, TemperatureMetrics> map;
 
-    public ReaderTask(Integer threadNumber, Integer skip, Integer read, Map<String, TemperatureMetrics> map) {
-//        this.threadNumber = threadNumber;
-        this.skip = skip;
-        this.read = read;
+    public ReaderTask(File file, long start, long end, Map<String, TemperatureMetrics> map) {
+        this.file = file;
+        this.start = start;
+        this.end = end;
         this.map = map;
     }
 
     @Override
-    public void run() {
-        try (BufferedReader br = new BufferedReader(new FileReader(FILEPATH))) {
-            if (br.skip(skip) < skip) return;
+    public Void call() throws Exception {
+        try (RandomAccessFile raf = new RandomAccessFile(file, "r")) {
+            raf.seek(start);
+            long bytesRead = 0;
+            BufferedReader reader = new BufferedReader(new FileReader(raf.getFD()));
+            if (start != 0) reader.readLine();
             String line;
-            for (int i = 0; i < read; i++) {
-                line = br.readLine();
-                if (line == null) break;
-//                System.out.println(threadNumber.toString() + ": " + i);
-                String[] kv = line.split(";");
-                Optional<TemperatureMetrics> value = Optional.ofNullable(map.getOrDefault(kv[0], null));
-                value.ifPresentOrElse(
-                        temperatureMetrics -> temperatureMetrics.add(kv[1]),
-                        () -> map.put(kv[0], new TemperatureMetrics(kv[0], kv[1])));
+            while ((line = reader.readLine()) != null && start + bytesRead < end) {
+                int index = line.length();
+                while (line.charAt(--index) != ';' && index >= line.length() - 7) {}
+                String key = line.substring(0, index);
+                float finalNumber = Float.parseFloat(line.substring(index + 1));
+                map.compute(key, (k, v) -> {
+                    if (v == null) return new TemperatureMetrics(finalNumber);
+                    else {
+                        v.add(finalNumber);
+                        return v;
+                    }
+                });
+                bytesRead += line.length() + 1;
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return null;
     }
 }
